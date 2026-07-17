@@ -1,0 +1,507 @@
+{
+  "$defs": {
+    "Canvas": {
+      "properties": {
+        "width": {
+          "description": "Width of the canvas in pixels",
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "description": "Height of the canvas in pixels",
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "background_color": {
+          "default": "#FFFFFF",
+          "description": "Hex code of background color",
+          "title": "Background Color",
+          "type": "string"
+        },
+        "unit": {
+          "default": "px",
+          "description": "Unit of measurement",
+          "enum": [
+            "px",
+            "in",
+            "cm"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "title": "Canvas",
+      "type": "object"
+    },
+    "ImageElement": {
+      "properties": {
+        "id": {
+          "description": "Unique element identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Human readable layer name",
+          "title": "Name",
+          "type": "string"
+        },
+        "x": {
+          "description": "X-coordinate relative to canvas origin",
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "description": "Y-coordinate relative to canvas origin",
+          "title": "Y",
+          "type": "number"
+        },
+        "width": {
+          "description": "Width of the element box",
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        },
+        "height": {
+          "description": "Height of the element box",
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "number"
+        },
+        "rotation": {
+          "default": 0.0,
+          "description": "Rotation angle in degrees (0-360)",
+          "title": "Rotation",
+          "type": "number"
+        },
+        "z_index": {
+          "default": 1,
+          "description": "Rendering layer hierarchy order",
+          "minimum": 0,
+          "title": "Z Index",
+          "type": "integer"
+        },
+        "opacity": {
+          "default": 1.0,
+          "description": "Element opacity (0.0 to 1.0)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Opacity",
+          "type": "number"
+        },
+        "visible": {
+          "default": true,
+          "description": "Whether element is drawn",
+          "title": "Visible",
+          "type": "boolean"
+        },
+        "locked": {
+          "default": false,
+          "description": "Whether position is locked in editor",
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "selectable": {
+          "default": true,
+          "description": "Whether user can select element",
+          "title": "Selectable",
+          "type": "boolean"
+        },
+        "type": {
+          "const": "image",
+          "default": "image",
+          "title": "Type",
+          "type": "string"
+        },
+        "properties": {
+          "$ref": "#/$defs/ImageProperties"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "x",
+        "y",
+        "width",
+        "height",
+        "properties"
+      ],
+      "title": "ImageElement",
+      "type": "object"
+    },
+    "ImageProperties": {
+      "properties": {
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Image URL or local file path",
+          "title": "Url"
+        },
+        "alt_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Alternative text",
+          "title": "Alt Text"
+        }
+      },
+      "title": "ImageProperties",
+      "type": "object"
+    },
+    "Metadata": {
+      "properties": {
+        "created_by": {
+          "default": "Creative Canvas AI",
+          "title": "Created By",
+          "type": "string"
+        },
+        "template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template"
+        },
+        "version": {
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "Metadata",
+      "type": "object"
+    },
+    "ShapeElement": {
+      "properties": {
+        "id": {
+          "description": "Unique element identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Human readable layer name",
+          "title": "Name",
+          "type": "string"
+        },
+        "x": {
+          "description": "X-coordinate relative to canvas origin",
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "description": "Y-coordinate relative to canvas origin",
+          "title": "Y",
+          "type": "number"
+        },
+        "width": {
+          "description": "Width of the element box",
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        },
+        "height": {
+          "description": "Height of the element box",
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "number"
+        },
+        "rotation": {
+          "default": 0.0,
+          "description": "Rotation angle in degrees (0-360)",
+          "title": "Rotation",
+          "type": "number"
+        },
+        "z_index": {
+          "default": 1,
+          "description": "Rendering layer hierarchy order",
+          "minimum": 0,
+          "title": "Z Index",
+          "type": "integer"
+        },
+        "opacity": {
+          "default": 1.0,
+          "description": "Element opacity (0.0 to 1.0)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Opacity",
+          "type": "number"
+        },
+        "visible": {
+          "default": true,
+          "description": "Whether element is drawn",
+          "title": "Visible",
+          "type": "boolean"
+        },
+        "locked": {
+          "default": false,
+          "description": "Whether position is locked in editor",
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "selectable": {
+          "default": true,
+          "description": "Whether user can select element",
+          "title": "Selectable",
+          "type": "boolean"
+        },
+        "type": {
+          "const": "shape",
+          "default": "shape",
+          "title": "Type",
+          "type": "string"
+        },
+        "properties": {
+          "$ref": "#/$defs/ShapeProperties"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "x",
+        "y",
+        "width",
+        "height",
+        "properties"
+      ],
+      "title": "ShapeElement",
+      "type": "object"
+    },
+    "ShapeProperties": {
+      "properties": {
+        "fill_color": {
+          "default": "#CCCCCC",
+          "description": "Fill hex color",
+          "title": "Fill Color",
+          "type": "string"
+        },
+        "stroke_color": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Stroke hex color",
+          "title": "Stroke Color"
+        },
+        "stroke_width": {
+          "default": 0,
+          "description": "Stroke line width",
+          "minimum": 0,
+          "title": "Stroke Width",
+          "type": "integer"
+        },
+        "border_radius": {
+          "default": 0,
+          "description": "Corner border radius",
+          "minimum": 0,
+          "title": "Border Radius",
+          "type": "integer"
+        }
+      },
+      "title": "ShapeProperties",
+      "type": "object"
+    },
+    "TextElement": {
+      "properties": {
+        "id": {
+          "description": "Unique element identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Human readable layer name",
+          "title": "Name",
+          "type": "string"
+        },
+        "x": {
+          "description": "X-coordinate relative to canvas origin",
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "description": "Y-coordinate relative to canvas origin",
+          "title": "Y",
+          "type": "number"
+        },
+        "width": {
+          "description": "Width of the element box",
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        },
+        "height": {
+          "description": "Height of the element box",
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "number"
+        },
+        "rotation": {
+          "default": 0.0,
+          "description": "Rotation angle in degrees (0-360)",
+          "title": "Rotation",
+          "type": "number"
+        },
+        "z_index": {
+          "default": 1,
+          "description": "Rendering layer hierarchy order",
+          "minimum": 0,
+          "title": "Z Index",
+          "type": "integer"
+        },
+        "opacity": {
+          "default": 1.0,
+          "description": "Element opacity (0.0 to 1.0)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Opacity",
+          "type": "number"
+        },
+        "visible": {
+          "default": true,
+          "description": "Whether element is drawn",
+          "title": "Visible",
+          "type": "boolean"
+        },
+        "locked": {
+          "default": false,
+          "description": "Whether position is locked in editor",
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "selectable": {
+          "default": true,
+          "description": "Whether user can select element",
+          "title": "Selectable",
+          "type": "boolean"
+        },
+        "type": {
+          "const": "text",
+          "default": "text",
+          "title": "Type",
+          "type": "string"
+        },
+        "properties": {
+          "$ref": "#/$defs/TextProperties"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "x",
+        "y",
+        "width",
+        "height",
+        "properties"
+      ],
+      "title": "TextElement",
+      "type": "object"
+    },
+    "TextProperties": {
+      "properties": {
+        "content": {
+          "description": "Text string value",
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "font_family": {
+          "default": "Poppins",
+          "description": "Font name",
+          "title": "Font Family",
+          "type": "string"
+        },
+        "font_size": {
+          "description": "Font size in points or pixels",
+          "exclusiveMinimum": 0,
+          "title": "Font Size",
+          "type": "number"
+        },
+        "font_weight": {
+          "default": "normal",
+          "description": "Font weight (e.g. bold, normal, 700)",
+          "title": "Font Weight",
+          "type": "string"
+        },
+        "color": {
+          "default": "#000000",
+          "description": "Hex color value",
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content",
+        "font_size"
+      ],
+      "title": "TextProperties",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "canvas": {
+      "$ref": "#/$defs/Canvas"
+    },
+    "elements": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "image": "#/$defs/ImageElement",
+            "shape": "#/$defs/ShapeElement",
+            "text": "#/$defs/TextElement"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/TextElement"
+          },
+          {
+            "$ref": "#/$defs/ImageElement"
+          },
+          {
+            "$ref": "#/$defs/ShapeElement"
+          }
+        ]
+      },
+      "title": "Elements",
+      "type": "array"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    }
+  },
+  "required": [
+    "canvas",
+    "elements",
+    "metadata"
+  ],
+  "title": "Layout",
+  "type": "object"
+}

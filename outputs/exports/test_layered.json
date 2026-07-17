@@ -1,0 +1,60 @@
+{
+  "canvas": {
+    "width": 800,
+    "height": 800,
+    "background": "#0F172A"
+  },
+  "layers": [
+    {
+      "id": "card_bg",
+      "name": "Panel Shape",
+      "type": "shape",
+      "left": 190.0,
+      "top": 190.0,
+      "width": 460.0,
+      "height": 390.4,
+      "opacity": 1.0,
+      "angle": 0.0,
+      "zIndex": 1,
+      "animation": {
+        "effect": "fade",
+        "duration": 1.5,
+        "delay": 0.0
+      },
+      "fill": "#1E293B",
+      "stroke": null,
+      "strokeWidth": 0,
+      "rx": 16,
+      "ry": 16
+    },
+    {
+      "id": "card_title",
+      "name": "Header Text",
+      "type": "text",
+      "left": 190.0,
+      "top": 610.4,
+      "width": 354.109375,
+      "height": 39.6,
+      "opacity": 1.0,
+      "angle": 0.0,
+      "zIndex": 2,
+      "animation": {
+        "effect": "slide_in",
+        "duration": 1.0,
+        "delay": 0.5
+      },
+      "text": "Animated Export Card",
+      "fontFamily": "Arial",
+      "fontSize": 36.0,
+      "fontStyle": "normal",
+      "fill": "#38BDF8",
+      "lineHeight": 1.2,
+      "charSpacing": 0.0
+    }
+  ],
+  "metadata": {
+    "format": "LayeredJSON-v1.0",
+    "created_by": "Export Engine Phase 7",
+    "version": "1.0"
+  }
+}
