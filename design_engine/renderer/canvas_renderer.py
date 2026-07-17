@@ -10,8 +10,16 @@ from design_engine.scene_graph.node import Node, TextNode, ImageNode, ShapeNode,
 from design_engine.layout_engine.layout import LayoutSolver
 
 # Caching registries to prevent disk/network bottlenecks
-_IMAGE_CACHE = {}
 _GRADIENT_CACHE = {}
+
+from typing import Optional
+from design_engine.assets.manager import AssetManager
+
+# To preserve backward compatibility with existing unit tests
+_DEFAULT_ASSET_MANAGER = AssetManager()
+
+def load_font(font_family: str, size: float) -> ImageFont.ImageFont:
+    return _DEFAULT_ASSET_MANAGER.load_font(font_family, size)
 
 BASE_DIR = CONFIG.BASE_DIR
 FONTS_DIR = os.path.join(BASE_DIR, "assets", "fonts")
@@ -29,42 +37,13 @@ def hex_to_rgba(hex_str: str, opacity: float = 1.0) -> Tuple[int, int, int, int]
     a = int(opacity * 255)
     return (r, g, b, a)
 
-@lru_cache(maxsize=256)
-def load_font(font_family: str, size: float) -> ImageFont.ImageFont:
-    """
-    Loads font faces from local directory assets or falls back to system matches/defaults.
-    """
-    font_filename = f"{font_family}.ttf"
-    local_font_path = os.path.join(FONTS_DIR, font_filename)
-    
-    # Try local asset fonts first
-    if os.path.exists(local_font_path):
-        try:
-            return ImageFont.truetype(local_font_path, int(size))
-        except Exception:
-            pass
-
-    # Try common system paths for macOS/Linux/Windows fallbacks
-    system_font_paths = [
-        f"/Library/Fonts/{font_family}.ttf",
-        f"/System/Library/Fonts/Supplemental/{font_family}.ttf",
-        f"/System/Library/Fonts/{font_family}.ttf",
-        f"/usr/share/fonts/truetype/dejavu/{font_family}.ttf",
-        f"/usr/share/fonts/TTF/{font_family}.ttf",
-        f"C:\\Windows\\Fonts\\{font_family}.ttf"
-    ]
-    
-    for path in system_font_paths:
-        try:
-            return ImageFont.truetype(path, int(size))
-        except Exception:
-            continue
-    return ImageFont.load_default()
+# load_font is defined dynamically above using AssetManager
 
 class CanvasRenderer:
-    def __init__(self, output_dir: str = "outputs/images"):
+    def __init__(self, output_dir: str = "outputs/images", asset_manager: Optional[AssetManager] = None):
         self.output_dir = os.path.join(BASE_DIR, output_dir)
         os.makedirs(self.output_dir, exist_ok=True)
+        self.asset_manager = asset_manager or _DEFAULT_ASSET_MANAGER
 
     def create_canvas(self, canvas_settings: Canvas) -> Image.Image:
         bg_rgba = hex_to_rgba(canvas_settings.background_color, 1.0)
@@ -147,69 +126,50 @@ class CanvasRenderer:
             
             if isinstance(node, TextNode):
                 draw = ImageDraw.Draw(layer)
-                font = load_font(node.properties.font_family, node.properties.font_size)
+                from design_engine.typography.layout import TypographyEngine
+                
+                # Query typography engine to solve layout positions
+                layout_data = TypographyEngine.layout_text(
+                    content=node.properties.content,
+                    font_family=node.properties.font_family,
+                    font_size=node.properties.font_size,
+                    width=node.width,
+                    height=node.height,
+                    line_height=node.properties.line_height,
+                    letter_spacing=node.properties.letter_spacing,
+                    align=node.properties.align,
+                    vertical_align=node.properties.vertical_align,
+                    asset_manager=self.asset_manager,
+                    word_spacing=node.properties.word_spacing,
+                    paragraph_spacing=node.properties.paragraph_spacing
+                )
+                
+                # Load the resolved font (handles auto-fit sizing)
+                font = self.asset_manager.load_font(node.properties.font_family, layout_data["font_size"])
                 
                 text_color = hex_to_rgba(node.properties.color, world_opacity)
                 stroke_rgba = hex_to_rgba(node.properties.stroke_color, world_opacity) if node.properties.stroke_color else None
-                # Disable legacy text character-level shadow drawing in favor of unified effects
-                shadow_rgba = None
-
-                # Segment paragraph content based on wrap boundaries
-                from design_engine.layout_engine.layout import wrap_text
-                lines = wrap_text(node.properties.content, font, node.width, node.properties.letter_spacing)
+                shadow_rgba = hex_to_rgba(node.properties.shadow_color, world_opacity) if node.properties.shadow_color else None
                 
-                # Retrieve bounding height of test metrics
-                bbox = draw.textbbox((0, 0), "Ap", font=font)
-                line_height_px = (bbox[3] - bbox[1]) * node.properties.line_height
-
-                # Compute baseline vertical alignment
-                total_text_h = len(lines) * line_height_px
-                start_y = 0.0
-                if node.properties.vertical_align == "middle":
-                    start_y = (node.height - total_text_h) / 2
-                elif node.properties.vertical_align == "bottom":
-                    start_y = node.height - total_text_h
-
-                for i, line in enumerate(lines):
-                    line_y = start_y + (i * line_height_px)
-                    
-                    # Compute horizontal alignment
-                    line_w = sum(font.getlength(c) for c in line) + node.properties.letter_spacing * (len(line) - 1)
-                    line_x = 0.0
-                    if node.properties.align == "center":
-                        line_x = (node.width - line_w) / 2
-                    elif node.properties.align == "right":
-                        line_x = node.width - line_w
-
-                    # Draw character by character if letter_spacing is applied
-                    if node.properties.letter_spacing > 0:
-                        char_x = line_x
-                        for char in line:
-                            char_w = font.getlength(char)
-                            
-                            # Draw Drop Shadow
-                            if shadow_rgba:
-                                draw.text(
-                                    (char_x + node.properties.shadow_offset_x, line_y + node.properties.shadow_offset_y),
-                                    char, font=font, fill=shadow_rgba
-                                )
-                            # Draw Character + Outline stroke
-                            draw.text(
-                                    (char_x, line_y), char, font=font, fill=text_color,
-                                    stroke_width=node.properties.stroke_width, stroke_fill=stroke_rgba
-                            )
-                            char_x += char_w + node.properties.letter_spacing
-                    else:
-                        # Draw solid line
-                        if shadow_rgba:
-                            draw.text(
-                                (line_x + node.properties.shadow_offset_x, line_y + node.properties.shadow_offset_y),
-                                line, font=font, fill=shadow_rgba
-                            )
+                # Draw pre-positioned lines
+                for line in layout_data["lines"]:
+                    # Draw Drop Shadow first
+                    if shadow_rgba:
                         draw.text(
-                            (line_x, line_y), line, font=font, fill=text_color,
-                            stroke_width=node.properties.stroke_width, stroke_fill=stroke_rgba
+                            (line["x"] + node.properties.shadow_offset_x, line["y"] + node.properties.shadow_offset_y),
+                            line["text"],
+                            font=font,
+                            fill=shadow_rgba
                         )
+                    # Draw Text with Outline Stroke
+                    draw.text(
+                        (line["x"], line["y"]),
+                        line["text"],
+                        font=font,
+                        fill=text_color,
+                        stroke_width=node.properties.stroke_width,
+                        stroke_fill=stroke_rgba
+                    )
                 
             elif isinstance(node, ImageNode):
                 layer = self._draw_image_leaf(node)
@@ -301,21 +261,10 @@ class CanvasRenderer:
         loaded_img = None
         
         if img_url:
-            if img_url in _IMAGE_CACHE:
-                loaded_img = _IMAGE_CACHE[img_url].copy()
-            elif img_url.startswith("http://") or img_url.startswith("https://"):
-                try:
-                    response = httpx.get(img_url, timeout=5.0)
-                    loaded_img = Image.open(BytesIO(response.content))
-                    _IMAGE_CACHE[img_url] = loaded_img.copy()
-                except Exception:
-                    pass
-            elif os.path.exists(img_url):
-                try:
-                    loaded_img = Image.open(img_url)
-                    _IMAGE_CACHE[img_url] = loaded_img.copy()
-                except Exception:
-                    pass
+            try:
+                loaded_img = self.asset_manager.load_image(img_url)
+            except Exception:
+                pass
 
         if not loaded_img:
             # Fallback placeholder cross card

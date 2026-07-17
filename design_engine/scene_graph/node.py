@@ -23,12 +23,19 @@ class TextProperties(BaseModel):
     align: Literal["left", "center", "right"] = Field(default="left")
     vertical_align: Literal["top", "middle", "bottom"] = Field(default="top")
     
+    font_style: str = Field(default="normal")
+    word_spacing: float = Field(default=0.0, ge=0.0)
+    paragraph_spacing: float = Field(default=0.0, ge=0.0)
+    text_decoration: Optional[str] = Field(default=None)
+    gradient_colors: Optional[List[str]] = Field(default=None)
+    
     # Strokes & Drop Shadows
     stroke_color: Optional[str] = Field(default=None)
     stroke_width: int = Field(default=0, ge=0)
     shadow_color: Optional[str] = Field(default=None)
     shadow_offset_x: float = Field(default=0.0)
     shadow_offset_y: float = Field(default=0.0)
+    shadow_blur: float = Field(default=0.0, ge=0.0)
 
     @field_validator("color", "stroke_color", "shadow_color")
     @classmethod
@@ -140,6 +147,7 @@ class BaseNode(BaseModel):
     # Sizing policies for auto-layout engines
     width_policy: SizingPolicy = Field(default="fixed")
     height_policy: SizingPolicy = Field(default="fixed")
+    aspect_ratio: Optional[float] = Field(default=None, description="Optional aspect ratio constraint")
     
     rotation: float = Field(default=0.0)
     z_index: int = Field(default=1, ge=0)
@@ -173,7 +181,7 @@ class GroupNode(BaseNode):
     type: Literal["group"] = "group"
     
     # Flow Layout Properties
-    layout_mode: Literal["absolute", "horizontal", "vertical"] = Field(default="absolute")
+    layout_mode: Literal["absolute", "horizontal", "vertical", "wrap"] = Field(default="absolute")
     spacing: float = Field(default=0.0)
     padding_left: float = Field(default=0.0)
     padding_right: float = Field(default=0.0)

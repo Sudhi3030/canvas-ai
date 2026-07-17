@@ -1,62 +1,34 @@
-Generate layout JSON structured exactly as follows:
+Generate semantic scene JSON structured exactly as follows:
 {
-  "canvas": {
-    "width": 1080,
-    "height": 1080,
-    "background_color": "#FFFFFF",
-    "unit": "px"
-  },
   "elements": [
     {
-      "id": "text_header",
-      "name": "Main Title",
-      "type": "text",
-      "x": 100,
-      "y": 120,
-      "width": 880,
-      "height": 100,
-      "rotation": 0.0,
-      "z_index": 2,
-      "opacity": 1.0,
-      "visible": true,
-      "locked": false,
-      "selectable": true,
-      "properties": {
-        "content": "Special Promotion",
-        "font_family": "Arial",
-        "font_size": 48.0,
-        "font_weight": "bold",
-        "color": "#000000"
-      }
+      "id": "logo_img",
+      "section": "logo",
+      "role": "logo_image",
+      "priority": "medium",
+      "content": "Brand logo label description"
     },
     {
-      "id": "cta_button",
-      "name": "Call to Action",
-      "type": "button",
-      "x": 390,
-      "y": 800,
-      "width": 300,
-      "height": 80,
-      "rotation": 0.0,
-      "z_index": 3,
-      "opacity": 1.0,
-      "visible": true,
-      "locked": false,
-      "selectable": true,
-      "properties": {
-        "content": "SHOP NOW",
-        "font_family": "Arial",
-        "font_size": 22.0,
-        "font_weight": "bold",
-        "text_color": "#FFFFFF",
-        "fill_color": "#FF5733",
-        "border_radius": 8
-      }
+      "id": "main_heading",
+      "section": "hero",
+      "role": "headline",
+      "priority": "high",
+      "content": "Main headline offer copy text"
+    },
+    {
+      "id": "promo_desc",
+      "section": "description",
+      "role": "description",
+      "priority": "medium",
+      "content": "Descriptive copy text explaining the promotion details"
+    },
+    {
+      "id": "call_to_action",
+      "section": "cta",
+      "role": "button",
+      "style": "primary",
+      "priority": "high",
+      "content": "Call to action label text"
     }
-  ],
-  "metadata": {
-    "created_by": "Creative Canvas AI",
-    "template": "Instagram Standard Promo",
-    "version": "1.0"
-  }
+  ]
 }

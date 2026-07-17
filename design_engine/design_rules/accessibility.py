@@ -3,7 +3,7 @@ from typing import List, Tuple
 from PIL import ImageDraw
 from design_engine.scene_graph.document import Layout
 from design_engine.scene_graph.node import Node, TextNode, GroupNode, ShapeNode
-from design_engine.layout_engine.layout import wrap_text
+# wrap_text is handled by TypographyEngine
 
 logger = logging.getLogger("DesignRulesEngine")
 
@@ -142,28 +142,31 @@ class DesignRulesEngine:
 
             # B. Text Box Height Overflow Auto-Shrink
             if node.height_policy == "fixed":
-                from design_engine.renderer.canvas_renderer import load_font
-                font = load_font(node.properties.font_family, node.properties.font_size)
-                lines = wrap_text(node.properties.content, font, node.width, node.properties.letter_spacing)
-                bbox = self.dummy_draw.textbbox((0, 0), "Ap", font=font)
-                line_h = bbox[3] - bbox[1]
-                required_h = len(lines) * line_h * node.properties.line_height
-
-                # Loop to shrink font size if text overflows height limits
-                original_size = node.properties.font_size
-                min_font_size = 12.0
-                while required_h > node.height and node.properties.font_size > min_font_size:
-                    node.properties.font_size -= 2.0
-                    font = load_font(node.properties.font_family, node.properties.font_size)
-                    lines = wrap_text(node.properties.content, font, node.width, node.properties.letter_spacing)
-                    bbox = self.dummy_draw.textbbox((0, 0), "Ap", font=font)
-                    line_h = bbox[3] - bbox[1]
-                    required_h = len(lines) * line_h * node.properties.line_height
-
-                if node.properties.font_size < original_size:
+                from design_engine.assets.manager import AssetManager
+                from design_engine.typography.layout import TypographyEngine
+                manager = AssetManager()
+                
+                res = TypographyEngine.layout_text(
+                    content=node.properties.content,
+                    font_family=node.properties.font_family,
+                    font_size=node.properties.font_size,
+                    width=node.width,
+                    height=node.height,
+                    line_height=node.properties.line_height,
+                    letter_spacing=node.properties.letter_spacing,
+                    align=node.properties.align,
+                    vertical_align=node.properties.vertical_align,
+                    asset_manager=manager,
+                    word_spacing=node.properties.word_spacing,
+                    paragraph_spacing=node.properties.paragraph_spacing
+                )
+                
+                if res["font_size"] < node.properties.font_size:
+                    original_size = node.properties.font_size
+                    node.properties.font_size = res["font_size"]
                     warnings.append(
                         f"Auto-shrunk font size for '{node.name}' from {original_size:.1f}pt to {node.properties.font_size:.1f}pt "
-                        f"to prevent boundary height overflow."
+                        "to prevent boundary height overflow."
                     )
 
         # 3. Recurse children

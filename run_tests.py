@@ -159,5 +159,39 @@ class TestBrandKit(unittest.TestCase):
         self.assertEqual(brand.spacing_scale, 1.0)
         self.assertEqual(brand.button_radius, 24)
 
+class TestSemanticAI(unittest.TestCase):
+    def test_semantic_models(self):
+        from design_engine.semantic_scene.models import SemanticNode, SemanticScene
+        node = SemanticNode(id="node_1", section="hero", role="headline", content="Hello")
+        self.assertEqual(node.id, "node_1")
+        self.assertEqual(node.section, "hero")
+        
+    def test_variant_generation_and_scoring(self):
+        from design_engine.semantic_scene.models import SemanticScene, SemanticNode
+        from design_engine.variant_generator.generator import VariantGenerator
+        from design_engine.layout_scorer.scorer import LayoutScorer
+        
+        scene = SemanticScene(
+            elements=[
+                SemanticNode(id="l1", section="logo", role="logo_image", content="logo_url"),
+                SemanticNode(id="h1", section="hero", role="headline", content="Fresh Salads"),
+                SemanticNode(id="cta1", section="cta", role="button", content="ORDER NOW")
+            ]
+        )
+        brand = BrandKit(name="Healthy")
+        generator = VariantGenerator()
+        variants = generator.generate_variants(scene, "Instagram", brand)
+        
+        self.assertEqual(len(variants), 5)
+        self.assertIn("Minimal", variants)
+        self.assertIn("Modern", variants)
+        self.assertIn("Premium", variants)
+        self.assertIn("Bold", variants)
+        self.assertIn("Luxury", variants)
+        
+        scorer = LayoutScorer()
+        score = scorer.score(variants["Minimal"])
+        self.assertTrue(0.0 <= score <= 100.0)
+
 if __name__ == "__main__":
     unittest.main()

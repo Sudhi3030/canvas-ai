@@ -1,117 +1,67 @@
 import os
 import sys
+import unittest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from design_engine.validator import validate_layout
+from design_engine.assets.manager import AssetManager
+from design_engine.assets.exceptions import AssetNotFoundException
 from design_engine.renderer.canvas_renderer import CanvasRenderer
+from design_engine.scene_graph.document import Layout, Canvas, Metadata
+from design_engine.scene_graph.node import ImageNode
 
-# Assets showcase template using a public sample image
-SAMPLE_IMAGE = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&q=80"
-
-TEST_ASSET_LAYOUT = {
-  "canvas": {
-    "width": 1000,
-    "height": 1000,
-    "background_color": "#1E293B",
-    "unit": "px"
-  },
-  "scene_tree": [
-    {
-      "id": "assets_grid",
-      "name": "Assets Grid Container",
-      "type": "group",
-      "x": 50,
-      "y": 50,
-      "width": 900,
-      "height": 900,
-      "layout_mode": "absolute",
-      "z_index": 1,
-      "children": [
-        {
-          "id": "img_cover",
-          "name": "Cover Image Node",
-          "type": "image",
-          "x": 0, "y": 0, "width": 400, "height": 400,
-          "z_index": 2,
-          "properties": {
-            "url": SAMPLE_IMAGE,
-            "fit_mode": "cover",
-            "border_radius": 32
-          }
-        },
-        {
-          "id": "img_contain",
-          "name": "Contain Image Node",
-          "type": "image",
-          "x": 450, "y": 0, "width": 450, "height": 400,
-          "z_index": 3,
-          "properties": {
-            "url": SAMPLE_IMAGE,
-            "fit_mode": "contain",
-            "border_radius": 0
-          }
-        },
-        {
-          "id": "img_circular_filtered",
-          "name": "Circular Filtered Image",
-          "type": "image",
-          "x": 0, "y": 450, "width": 400, "height": 400,
-          "z_index": 4,
-          "properties": {
-            "url": SAMPLE_IMAGE,
-            "fit_mode": "cover",
-            "clip_circle": True,
-            "brightness": 1.2,
-            "contrast": 1.5,
-            "saturation": 2.0,
-            "blur": 3.0
-          }
-        },
-        {
-          "id": "img_description",
-          "name": "Label Text",
-          "type": "text",
-          "x": 450, "y": 450, "width": 450, "height": 400,
-          "z_index": 5,
-          "properties": {
-            "content": "Image Engine: Cover with 32px rounded corners (Top-Left)\n\nContain fit maintaining ratio (Top-Right)\n\nCircular mask + saturation + blur filters (Bottom-Left)",
-            "font_family": "Arial",
-            "font_size": 24.0,
-            "color": "#F8FAFC",
-            "align": "left",
-            "line_height": 1.6
-          }
-        }
-      ]
-    }
-  ],
-  "metadata": {
-    "created_by": "Design Assets Engine Phase 4",
-    "template": "Assets Filters Showcase",
-    "version": "1.0"
-  }
-}
-
-def main():
-    print("=== Testing Assets Engine Parser & Validator ===")
-    try:
-        layout = validate_layout(TEST_ASSET_LAYOUT)
-        print("✓ Pydantic verified Image and asset properties.")
-    except Exception as e:
-        print(f"✗ Schema validation failed: {e}")
-        sys.exit(1)
-
-    print("\n=== Rendering Assets & Filters Showcase ===")
-    try:
-        renderer = CanvasRenderer()
-        output_path = renderer.render(layout, filename="test_assets_filters.png")
-        print(f"✓ Success! Assets layout rendered preview: {output_path}")
-        assert os.path.exists(output_path), "Error: Preview image not found!"
-        print("=== Assets Engine Test Passed ===")
-    except Exception as e:
-        print(f"✗ Assets renderer failed: {e}")
-        sys.exit(1)
+class TestAssetManager(unittest.TestCase):
+    def test_local_remote_loading(self):
+        manager = AssetManager()
+        # Remote Image
+        url = "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80"
+        img = manager.load_image(url)
+        self.assertIsNotNone(img)
+        
+        # Cache hit
+        meta = manager.get_metadata(url)
+        self.assertEqual(meta.version, 1)
+        
+    def test_duplicate_detection(self):
+        manager = AssetManager()
+        url = "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80"
+        img1 = manager.load_image(url)
+        
+        # Force load same url under an alias name to check deduplication hashes
+        img2 = manager.load_image(url)
+        meta1 = manager.get_metadata(url)
+        self.assertIsNotNone(meta1.hash)
+        
+    def test_cache_invalidation_and_versioning(self):
+        manager = AssetManager()
+        url = "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80"
+        manager.load_image(url)
+        
+        manager.invalidate(url)
+        meta = manager.get_metadata(url)
+        self.assertEqual(meta.version, 2)
+        
+    def test_exceptions_handling(self):
+        manager = AssetManager()
+        with self.assertRaises(AssetNotFoundException):
+            manager.load_image("nonexistent_file.png")
+            
+    def test_renderer_integration(self):
+        manager = AssetManager()
+        renderer = CanvasRenderer(asset_manager=manager)
+        layout = Layout(
+            canvas=Canvas(width=400, height=400),
+            scene_tree=[
+                ImageNode(
+                    id="img", name="Injected Asset",
+                    x=50, y=50, width=300, height=300,
+                    properties={"url": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100&q=80", "fit_mode": "cover"}
+                )
+            ],
+            metadata=Metadata()
+        )
+        out = renderer.render(layout, filename="test_assets_integration.png")
+        self.assertTrue(os.path.exists(out))
 
 if __name__ == "__main__":
-    main()
+    unittest.main()

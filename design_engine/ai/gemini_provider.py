@@ -18,7 +18,7 @@ class BaseLLM(ABC):
         pass
 
 class MockLLM(BaseLLM):
-    def __init__(self, mock_path: str = "mocks/mock_layout.json"):
+    def __init__(self, mock_path: str = "mocks/mock_semantic_scene.json"):
         # Resolve mock path relative to the centralized workspace root directory
         self.mock_path = os.path.join(CONFIG.BASE_DIR, mock_path)
         os.makedirs(os.path.dirname(self.mock_path), exist_ok=True)
@@ -38,11 +38,22 @@ class OpenAILLM(BaseLLM):
             raise LLMServiceException("OpenAI API key is missing. Please set OPENAI_API_KEY environment variable.")
         self.client = OpenAI(api_key=CONFIG.OPENAI_API_KEY)
 
-    def generate_layout_json(self, system_prompt: str, user_prompt: str, retries: int = 3) -> str:
-        raise LLMServiceException(
-            "OpenAI API call is temporarily disabled in this phase. "
-            "Please instantiate MockLLM() instead."
-        )
+    def generate_layout_json(self, system_prompt: str, user_prompt: str) -> str:
+        try:
+            response = self.client.chat.completions.create(
+                model=CONFIG.DEFAULT_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.7
+            )
+            if not response.choices[0].message.content:
+                raise LLMServiceException("Received empty response text from OpenAI API.")
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            raise LLMServiceException(f"OpenAI API request failed: {e}")
 
 class GeminiLLM(BaseLLM):
     def __init__(self):
@@ -95,3 +106,6 @@ class GeminiLLM(BaseLLM):
             
         except Exception as e:
             raise LLMServiceException(f"Google Gemini API request failed: {e}")
+
+# Alias for backward compatibility with legacy test scripts
+LLMServiceClient = MockLLM
