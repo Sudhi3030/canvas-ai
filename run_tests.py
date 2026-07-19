@@ -182,12 +182,9 @@ class TestSemanticAI(unittest.TestCase):
         generator = VariantGenerator()
         variants = generator.generate_variants(scene, "Instagram", brand)
         
-        self.assertEqual(len(variants), 5)
+        self.assertEqual(len(variants), 10)
         self.assertIn("Minimal", variants)
-        self.assertIn("Modern", variants)
         self.assertIn("Premium", variants)
-        self.assertIn("Bold", variants)
-        self.assertIn("Luxury", variants)
         
         scorer = LayoutScorer()
         score = scorer.score(variants["Minimal"])

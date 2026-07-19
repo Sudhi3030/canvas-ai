@@ -105,9 +105,16 @@ def run_pipeline(
     best_layout = None
     best_score = -1.0
     
-    for theme, layout_variant in variants.items():
+    for i, (theme, layout_variant) in enumerate(variants.items(), 1):
         # Optimize design rules (contrast, spacing, CTA visibility)
         optimizer.optimize(layout_variant)
+        
+        # Save intermediate variant debug file
+        import os
+        from design_engine.renderer.canvas_renderer import CanvasRenderer
+        os.makedirs("outputs/variants", exist_ok=True)
+        CanvasRenderer().render(layout_variant, f"../variants/variant_{i:02d}.png")
+        
         # Score the resulting layout
         score = scorer.score(layout_variant)
         logger.info(f"Theme '{theme}' Layout Score: {score:.1f}/100.0")

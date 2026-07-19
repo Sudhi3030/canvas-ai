@@ -1,0 +1,5 @@
+from design_engine.editing.intent_parser import IntentParser
+from design_engine.editing.scene_modifier import SceneModifier
+from design_engine.editing.history_manager import HistoryManager
+from design_engine.editing.optimizer import EditingOptimizer
+from design_engine.editing.models import ParsedIntent

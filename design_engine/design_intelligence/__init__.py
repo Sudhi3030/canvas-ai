@@ -1,0 +1,17 @@
+from design_engine.design_intelligence.scorer import DesignScorer
+from design_engine.design_intelligence.repair import DesignRepairer
+from design_engine.design_intelligence.optimizer import DesignOptimizer
+from design_engine.design_intelligence.models import ScoreBreakdown, MetricScore
+
+# Phase 16 exports
+from design_engine.design_intelligence.design_tokens import DesignTokens, ColorPalette
+from design_engine.design_intelligence.style_selector import StyleSelector
+from design_engine.design_intelligence.composition_rules import CompositionRules
+from design_engine.design_intelligence.composer import Composer
+from design_engine.design_intelligence.focus import FocusEngine
+from design_engine.design_intelligence.decorations import DecorationEngine
+from design_engine.design_intelligence.metrics import DesignMetrics
+from design_engine.design_intelligence.layout_refiner import LayoutRefiner
+from design_engine.design_intelligence.planner import DesignIntelligencePlanner
+from design_engine.design_intelligence.balance import BalanceEngine
+from design_engine.design_intelligence.color_harmony import ColorHarmonyEngine

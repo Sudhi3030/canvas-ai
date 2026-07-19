@@ -5,21 +5,67 @@ from design_engine.scene_graph.node import Node, GroupNode, TextNode
 
 class LayoutSolver:
     def __init__(self):
-        # We keep a dummy context to comply with legacy requirements or measurements fallbacks
         from PIL import Image
         self.dummy_img = Image.new("RGBA", (1, 1))
         self.dummy_draw = ImageDraw.Draw(self.dummy_img)
 
     def solve(self, layout: Layout) -> None:
         """
-        Updates coordinate offsets x, y and dimensions width, height of all nodes
-        in the scene graph using a two-pass calculation.
+        Runs the refined 10-pass layout solver pipeline.
         """
-        # Pass 1: Measure preferred sizes from bottom-up
+        is_template = (layout.metadata is not None and 
+                       getattr(layout.metadata, "template", None) is not None and
+                       layout.metadata.template != "")
+                       
+        if is_template:
+            # Pass 1: Visual Hierarchy Engine
+            from design_engine.layout_engine.visual_hierarchy import VisualHierarchyEngine
+            VisualHierarchyEngine.assign_hierarchy_importance(layout)
+            
+            # Pass 2: Composition Planner
+            from design_engine.layout_engine.composition_planner import CompositionPlanner
+            strategy = CompositionPlanner.plan_composition(layout)
+            
+            # Pass 3: Region Generator
+            from design_engine.layout_engine.region_generator import RegionGenerator
+            RegionGenerator.allocate_regions(layout, strategy)
+            
+            # Pass 4: Element Sizer (sets dimensions before coordinate solver)
+            from design_engine.layout_engine.element_sizer import ElementSizer
+            ElementSizer.size_elements(layout)
+            
+            # Pass 5: Constraint Solver (Initial coordinate constraint solve)
+            from design_engine.layout_engine.constraint_solver import ConstraintSolver
+            ConstraintSolver.solve_constraints(layout)
+            
+            # Pass 6: Alignment Engine
+            from design_engine.layout_engine.alignment_engine import AlignmentEngine
+            AlignmentEngine.align_elements(layout, strategy)
+            
+            # Pass 7: Spacing Optimizer
+            from design_engine.layout_engine.spacing_optimizer import SpacingOptimizer
+            SpacingOptimizer.optimize_spacing(layout)
+            
+            # Pass 8: Collision Detector (passive audit validator)
+            from design_engine.layout_engine.collision_detector import CollisionDetector
+            conflicts = CollisionDetector.detect_collisions(layout)
+            
+            # Pass 9: Metrics Engine
+            from design_engine.layout_engine.metrics import MetricsEngine
+            MetricsEngine.compute_metrics(layout)
+            
+            # Pass 10: Debug Renderer overlays
+            from design_engine.layout_engine.debug_renderer import DebugRenderer
+            DebugRenderer.render_debug_overlays(layout)
+
+        # Standard baseline measurements resolver pass
+        self._solve_geometry(layout)
+
+    def _solve_geometry(self, layout: Layout) -> None:
+        """Computes coordinates & sizes for nodes."""
         for node in layout.scene_tree:
             self._measure_node(node)
 
-        # Pass 2: Position elements and compute final fill dimensions top-down
         canvas_w = float(layout.canvas.width)
         canvas_h = float(layout.canvas.height)
         
@@ -28,26 +74,20 @@ class LayoutSolver:
                 node.width = canvas_w
             if node.height_policy == "fill":
                 node.height = canvas_h
-            
             self._layout_node(node, node.width, node.height)
 
     def _measure_node(self, node: Node) -> Tuple[float, float]:
-        """
-        Pass 1: Computes the preferred (measured) width and height of the node.
-        """
         if not node.visible:
             return 0.0, 0.0
 
         measured_w = node.width
         measured_h = node.height
 
-        # A. Measure leaves based on content
         if isinstance(node, TextNode):
             from design_engine.assets.manager import AssetManager
             from design_engine.typography.layout import TypographyEngine
             manager = AssetManager()
             
-            # If width_policy is fit, calculate text width
             if node.width_policy == "fit":
                 font = manager.load_font(node.properties.font_family, node.properties.font_size)
                 text_w = sum(font.getlength(c) for c in node.properties.content)
@@ -56,7 +96,6 @@ class LayoutSolver:
                 text_w += node.properties.word_spacing * (len(words) - 1)
                 measured_w = text_w
                 
-            # If height_policy is fit, compute lines wrapping height
             if node.height_policy == "fit":
                 res = TypographyEngine.layout_text(
                     content=node.properties.content,
@@ -77,7 +116,6 @@ class LayoutSolver:
                 else:
                     measured_h = 0.0
                     
-        # B. Measure groups based on layout flow direction
         elif isinstance(node, GroupNode):
             children_sizes = [self._measure_node(child) for child in node.children]
             num_children = len(node.children)
@@ -113,7 +151,7 @@ class LayoutSolver:
                                 current_row_w = child_w
                                 current_row_max_h = child_h
                         if current_row_max_h > 0:
-                            rows_heights.append(current_row_max_h)
+                             rows_heights.append(current_row_max_h)
                         inner_w = avail_w
                         inner_h = sum(rows_heights) + node.spacing * (len(rows_heights) - 1)
                 elif node.layout_mode == "grid":
@@ -133,7 +171,6 @@ class LayoutSolver:
             if node.height_policy == "fit":
                 measured_h = measured_h_flow
 
-        # Resolve Aspect Ratio constraints
         from design_engine.layout_engine.constraints import ConstraintSolver
         measured_w, measured_h = ConstraintSolver.apply_aspect_ratio(
             measured_w, measured_h, node.aspect_ratio, node.width_policy, node.height_policy
@@ -144,10 +181,6 @@ class LayoutSolver:
         return measured_w, measured_h
 
     def _layout_node(self, node: Node, concrete_w: float, concrete_h: float) -> None:
-        """
-        Pass 2: Computes relative offsets and sizes for child elements.
-        """
-        # Dynamic re-measure for TextNodes with fit height once width is concrete
         if isinstance(node, TextNode) and node.height_policy == "fit":
             from design_engine.assets.manager import AssetManager
             from design_engine.typography.layout import TypographyEngine
@@ -171,7 +204,6 @@ class LayoutSolver:
             else:
                 concrete_h = 0.0
 
-        # Resolve aspect_ratio constraints
         from design_engine.layout_engine.constraints import ConstraintSolver
         concrete_w, concrete_h = ConstraintSolver.apply_aspect_ratio(
             concrete_w, concrete_h, node.aspect_ratio, node.width_policy, node.height_policy
@@ -186,7 +218,6 @@ class LayoutSolver:
         layout_mode = node.layout_mode
         children = node.children
 
-        # A. Resolve absolute layouts
         if layout_mode == "absolute":
             for child in children:
                 child_w = child.width
@@ -198,7 +229,6 @@ class LayoutSolver:
                 self._layout_node(child, child_w, child_h)
             return
 
-        # B. Resolve wrap layouts
         elif layout_mode == "wrap":
             from design_engine.layout_engine.flex import FlexSolver
             avail_w = concrete_w - (node.padding_left + node.padding_right)
@@ -214,7 +244,6 @@ class LayoutSolver:
             )
             return
 
-        # C. Resolve grid layouts
         elif layout_mode == "grid":
             from design_engine.layout_engine.grid import GridSolver
             avail_w = concrete_w - (node.padding_left + node.padding_right)
@@ -231,7 +260,6 @@ class LayoutSolver:
             )
             return
 
-        # D. Resolve stacks (horizontal / vertical flow layouts)
         avail_w = concrete_w - (node.padding_left + node.padding_right)
         avail_h = concrete_h - (node.padding_top + node.padding_bottom)
         
