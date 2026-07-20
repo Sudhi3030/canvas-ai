@@ -4,42 +4,38 @@ import unittest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from design_engine.design_intelligence.layout_refiner import LayoutRefiner
+from design_engine.design_intelligence.engine import DesignIntelligenceEngine
 from design_engine.scene_graph.document import Layout, Canvas, Metadata
-from design_engine.scene_graph.node import TextNode, ComponentNode
+from design_engine.scene_graph.node import ImageNode, TextNode, ComponentNode
 
-class TestDesignIntelligencePipeline(unittest.TestCase):
-    def test_layout_refinement(self):
-        layout = Layout(
-            canvas=Canvas(width=800, height=800),
-            scene_tree=[
-                TextNode(
-                    id="header_text", name="Main Title",
-                    x=50, y=50, width=400, height=80,
-                    properties={"content": "Headline", "color": "#000000", "font_size": 24.0}
-                ),
-                ComponentNode(
-                    id="cta_button", name="CTA Button",
-                    x=50, y=200, width=100, height=40
-                )
-            ],
-            metadata=Metadata()
+class TestDesignIntelligence(unittest.TestCase):
+    def test_design_intelligence_pipeline(self):
+        hero = ImageNode(
+            id="hero", name="Hero Image", x=0, y=0, width=300, height=200,
+            properties={"url": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&q=80"}
+        )
+        heading = TextNode(
+            id="heading", name="Heading",
+            properties={"content": "Salads", "color": "#000000", "font_size": 24.0}
         )
         
-        # Run Refinement
-        LayoutRefiner.refine(layout, "Premium")
+        layout = Layout(
+            canvas=Canvas(width=800, height=800),
+            scene_tree=[hero, heading],
+            metadata=Metadata(template="Split Layout")
+        )
         
-        # 1. Colors updated based on palette background color
-        self.assertEqual(layout.canvas.background_color, "#F8FAFC")
+        DesignIntelligenceEngine.process(layout)
         
-        # 2. CTA button size boosted as focal point
-        cta = [n for n in layout.scene_tree if "cta" in n.id.lower()][0]
-        self.assertEqual(cta.width, 180.0)
-        self.assertEqual(cta.height, 50.0)
+        # 1. Verify Visual Hierarchy assigned priority
+        self.assertEqual(getattr(hero, "importance", None), 100.0)
         
-        # 3. Floating decoration abstract shape injected at the beginning
-        self.assertTrue(len(layout.scene_tree) > 2)
-        self.assertEqual(layout.scene_tree[0].id, "accent_blob_bg")
+        # 2. Verify Hero Image occupies 35-50% height (800 * 0.45 = 360)
+        self.assertTrue(300.0 <= hero.height <= 400.0)
+        
+        # 3. Verify metrics compiled
+        metrics = getattr(layout, "metrics", {})
+        self.assertIn("balance", metrics)
 
 if __name__ == "__main__":
     unittest.main()

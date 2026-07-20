@@ -15,3 +15,4 @@ from design_engine.design_intelligence.layout_refiner import LayoutRefiner
 from design_engine.design_intelligence.planner import DesignIntelligencePlanner
 from design_engine.design_intelligence.balance import BalanceEngine
 from design_engine.design_intelligence.color_harmony import ColorHarmonyEngine
+from design_engine.design_intelligence.engine import DesignIntelligenceEngine

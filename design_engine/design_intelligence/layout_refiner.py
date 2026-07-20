@@ -24,5 +24,6 @@ class LayoutRefiner:
         # 4. Inject abstract graphical decorations
         DecorationEngine.inject_decorations(layout)
         
-        # 5. Record refined metrics status
-        DesignMetrics.compile_metrics(layout, 86.0)
+        # 5. Run professional Design Intelligence Engine
+        from design_engine.design_intelligence.engine import DesignIntelligenceEngine
+        DesignIntelligenceEngine.process(layout)
